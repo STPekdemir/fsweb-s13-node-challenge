@@ -1,5 +1,7 @@
 const express = require("express");
 
+const projectMiddleWare = require("./projects-middleware");
+
 const ProjectModel = require("./projects-model");
 
 const projectRouter = express.Router();
@@ -19,114 +21,74 @@ projectRouter.get("/", async (req, res, next) => {
   }
 });
 
-projectRouter.get("/:id", async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const post = await ProjectModel.get(id);
-    if (post) {
-      res.status(200).json(post);
-    } else {
-      res
-        .status(404)
-        .json({ message: "Belirtilen id'ye sahip post bulunamadı" });
+projectRouter.get(
+  "/:id",
+  projectMiddleWare.validateId,
+  async (req, res, next) => {
+    try {
+      res.status(200).json(req.project);
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
+);
 
-projectRouter.post("/", async (req, res, next) => {
-  try {
-    const { name, description, completed } = req.body;
-    if (name && description) {
-      if (completed === true) {
-        const newPost = await ProjectModel.insert({
-          name: name,
-          description: description,
-          completed: true,
-        });
-        res.status(200).json(newPost);
+projectRouter.post(
+  "/",
+  projectMiddleWare.valideteBody,
+  async (req, res, next) => {
+    try {
+      const newPost = await ProjectModel.insert(req.ndc);
+      res.status(201).json(newPost);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+projectRouter.put(
+  "/:id",
+  projectMiddleWare.validateId,
+  projectMiddleWare.valideteBody,
+  async (req, res, next) => {
+    try {
+      if (!req.body.hasOwnProperty("completed")) {
+        res.status(400).json({ message: "completed değerini sağlayınız" });
       } else {
-        const newPost2 = await ProjectModel.insert({
-          name: name,
-          description: description,
-        });
-        res.status(200).json(newPost2);
+        const newPost = await ProjectModel.update(req.id, req.ndc);
+
+        res.status(201).json(newPost);
       }
-    } else {
-      res.status(400).json({ message: "name ve description sağlayınız" });
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
+);
 
-projectRouter.put("/:id", async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const post = await ProjectModel.get(id);
-    if (post) {
-      const { name, description, completed } = req.body;
-      if (name && description) {
-        if (completed === true) {
-          const newPost = await ProjectModel.update(id, {
-            name: name,
-            description: description,
-            completed: true,
-          });
-          res.status(201).json(newPost);
-        } else {
-          const newPost2 = await ProjectModel.update(id, {
-            name: name,
-            description: description,
-          });
-          res.status(201).json(newPost2);
-        }
-      } else {
-        res.status(400).json({ message: "name ve description sağlayınız" });
-      }
-    } else {
-      res
-        .status(404)
-        .json({ message: "belirtilen id'ye sahip kullanıcı bulunamadı" });
+projectRouter.delete(
+  "/:id",
+  projectMiddleWare.validateId,
+  async (req, res, next) => {
+    try {
+      await ProjectModel.remove(req.id);
+      res.status(201).json({ message: "silindi" });
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
+);
 
-projectRouter.delete("/:id", async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const post = await ProjectModel.get(id);
-    if (post) {
-      await ProjectModel.remove(id);
-      res.status(200).json({ message: "silindi" });
-    } else {
-      res
-        .status(404)
-        .json({ message: "Belirtilen id'ye sahip post bulunamadı" });
-    }
-  } catch (error) {
-    next(error);
-  }
-});
-
-projectRouter.get("/:id/actions", async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const post = await ProjectModel.get(id);
-    if (post) {
-      const postActions = await ProjectModel.getProjectActions(id);
+projectRouter.get(
+  "/:id/actions",
+  projectMiddleWare.validateId,
+  async (req, res, next) => {
+    try {
+      const postActions = await ProjectModel.getProjectActions(req.id);
       res.status(200).json(postActions);
-    } else {
-      res
-        .status(404)
-        .json({ message: "Belirtilen id'ye sahip post bulunamadı" });
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
+);
 
 module.exports = projectRouter;
