@@ -1,5 +1,9 @@
-const express = require('express');
+const express = require("express");
+const projectrouter = require("./projects/projects-router");
 const server = express();
+server.use(express.json());
+
+server.use("/api/projects", projectrouter);
 
 // Sunucunuzu yapılandırın
 // Eylem routerınızı /api/actions/actions-router.js içinde oluşturun
